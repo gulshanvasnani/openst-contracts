@@ -258,6 +258,7 @@ contract TokenHolder is MultiSigWallet {
         address _to,
         uint256 _nonce,
         bytes _data,
+        bytes _callPrefix,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
@@ -270,6 +271,7 @@ contract TokenHolder is MultiSigWallet {
             _to,
             _nonce,
             _data,
+            _callPrefix,
             _v,
             _r,
             _s
@@ -313,6 +315,7 @@ contract TokenHolder is MultiSigWallet {
         address _from,
         address _to,
         uint256 _nonce,
+        bytes _callPrefix,
         bytes _data,
         uint8 _v,
         bytes32 _r,
@@ -327,6 +330,7 @@ contract TokenHolder is MultiSigWallet {
             _to,
             _nonce,
             _data,
+            _callPrefix,
             _v,
             _r,
             _s
@@ -396,6 +400,7 @@ contract TokenHolder is MultiSigWallet {
         address _to,
         uint256 _nonce,
         bytes _data,
+        bytes _callPrefix,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
@@ -421,8 +426,10 @@ contract TokenHolder is MultiSigWallet {
         );
 
         // Construct hashed message.
-        bytes32 messageHash = getHashedMessage(_from, _to, _data, _nonce);
-        address signer = ecrecover(messageHash, _v, _r, _s);
+        bytes32 messageHash = getHashedMessage(_from, _to, _data, _nonce, _callPrefix);
+        bytes32 hashWithPrefix = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32",messageHash));
+        address signer = ecrecover(hashWithPrefix, _v, _r, _s);
+
         require(
             isAuthorizedEphemeralKey(signer),
             "Invalid ephemeral key!"
@@ -456,18 +463,13 @@ contract TokenHolder is MultiSigWallet {
         address _from,
         address _to,
         bytes _data,
-        uint256 _nonce
+        uint256 _nonce,
+        bytes _callPrefix
     )
         pure
         private
         returns (bytes32)
     {
-        bytes4 callPrefix;
-        // Extract the first 4 bytes from _data.
-        assembly{
-            callPrefix := mload(add(_data, 4))
-        }
-
         return keccak256(abi.encodePacked(
             byte(0x19), // Starting a transaction with byte(0x19) ensure the signed data from being a valid ethereum transaction.
             byte(0), // The second argument is a version control byte.
@@ -479,7 +481,7 @@ contract TokenHolder is MultiSigWallet {
             uint8(0), // gasPrice
             uint8(0), // gasLimit
             uint8(0), // gasToken
-            callPrefix, // 4 byte standard call prefix of the function to be called in the from contract.
+            _callPrefix, // 4 byte standard call prefix of the function to be called in the from contract.
                         // This guarantees that a signed message can be only executed in a single instance.
             uint8(0), // 0 for a standard call, 1 for a DelegateCall and 0 for a create opcode
             '' // extraHash is always hashed at the end. This is done to increase future compatibility of the standard.
