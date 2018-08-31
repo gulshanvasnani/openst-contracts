@@ -429,7 +429,7 @@ contract TokenHolder is MultiSigWallet {
         );
 
         // Construct hashed message.
-        bytes32 messageHash = getHashedMessage(_from, _to, _data, _nonce, _callPrefix);
+        bytes32 messageHash = getHashedMessage(_from, _to, _data, _callPrefix, _nonce);
         bytes32 hashWithPrefix = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32",messageHash));
         address signer = ecrecover(hashWithPrefix, _v, _r, _s);
 
