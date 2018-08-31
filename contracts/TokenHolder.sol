@@ -247,6 +247,7 @@ contract TokenHolder is MultiSigWallet {
      * @param _nonce incremental nonce.
      * @param _data the bytecode to be executed.
      *         Use web3 getData method to construct _data.
+     * @param _callPrefix It is 4-bytes function selector.
      * @param _v It's the recovery id.
      * @param _r It's the output of an ECDSA signature.
      * @param _s It's also the output of an ECDSA signature.
@@ -305,6 +306,7 @@ contract TokenHolder is MultiSigWallet {
      * @param _nonce incremental nonce.
      * @param _data the bytecode to be executed.
      *        It's the bytecode CoGateway redeem function.
+     * @param _callPrefix It is 4-bytes function selector.
      * @param _v It's the recovery id.
      * @param _r It's the output of an ECDSA signature.
      * @param _s It's also the output of an ECDSA signature.
@@ -315,8 +317,8 @@ contract TokenHolder is MultiSigWallet {
         address _from,
         address _to,
         uint256 _nonce,
-        bytes _callPrefix,
         bytes _data,
+        bytes _callPrefix,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
@@ -389,6 +391,7 @@ contract TokenHolder is MultiSigWallet {
      * @param _nonce incremental nonce.
      * @param _data the bytecode to be executed.
      *         Use web3 getData method to construct _data.
+     * @param _callPrefix It is 4-bytes function selector.
      * @param _v It's the recovery id.
      * @param _r It's the output of an ECDSA signature.
      * @param _s It's also the output of an ECDSA signature.
@@ -450,21 +453,22 @@ contract TokenHolder is MultiSigWallet {
     }
 
     /**
-     *  @notice hash the data
+     * @notice hash the data
      *
-     *  @param _to the target contract the transaction will be executed upon. e.g. BT in case of transfer.
-     *  @param _from it will always be the contract executing the code. It needs to be tokenholder contract address.
-     *  @param _data the bytecode to be executed.
-     *  @param _nonce nonce or a timestamp.
+     * @param _to the target contract the transaction will be executed upon. e.g. BT in case of transfer.
+     * @param _from it will always be the contract executing the code. It needs to be tokenholder contract address.
+     * @param _data the bytecode to be executed.
+     * @param _callPrefix It is 4-bytes function selector.
+     * @param _nonce nonce or a timestamp.
      *
-     *  @return bytes32 hashed data
+     * @return bytes32 hashed data
      */
     function getHashedMessage(
         address _from,
         address _to,
         bytes _data,
-        uint256 _nonce,
-        bytes _callPrefix
+        bytes _callPrefix,
+        uint256 _nonce
     )
         pure
         private
