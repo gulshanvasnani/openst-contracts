@@ -66,7 +66,7 @@ contract TokenHolder is MultiSigWallet {
         bool _status
     );
 
-
+    event test(bytes32 messagehash, address signer);
     /* Structs */
 
     /** expirationHeight is block number at which ephemeralKey expires. */
@@ -277,18 +277,18 @@ contract TokenHolder is MultiSigWallet {
             _s
         );
 
-        BrandedToken(brandedToken).approve(
-            tokenRules,
-            ephemeralKeyData.spendingLimit
-        );
-        executionResult_ = _to.call(_data);
-        emit RuleExecuted(_from, _to, _nonce, executionResult_);
-        BrandedToken(brandedToken).approve(
-            tokenRules,
-            0
-        );
+//        BrandedToken(brandedToken).approve(
+//            tokenRules,
+//            ephemeralKeyData.spendingLimit
+//        );
+//        executionResult_ = _to.call(_data);
+//        emit RuleExecuted(_from, _to, _nonce, executionResult_);
+//        BrandedToken(brandedToken).approve(
+//            tokenRules,
+//            0
+//        );
 
-        return executionResult_;
+        return true;
     }
 
     /**
@@ -388,43 +388,44 @@ contract TokenHolder is MultiSigWallet {
         private
         returns (EphemeralKeyData storage ephemeralKeyData_)
     {
-        require(
-            _from == address(this),
-            "From should be tokenholder contract address"
-        );
-        require(
-            _to != address(0),
-            "to address can't be 0"
-        );
-        require(
-            _nonce != 0,
-            "Nonce can't be 0."
-        );
-        require(
-            _data.length != 0,
-            "Data length can't be 0."
-        );
+//        require(
+//            _from == address(this),
+//            "From should be tokenholder contract address"
+//        );
+//        require(
+//            _to != address(0),
+//            "to address can't be 0"
+//        );
+//        require(
+//            _nonce != 0,
+//            "Nonce can't be 0."
+//        );
+//        require(
+//            _data.length != 0,
+//            "Data length can't be 0."
+//        );
 
         // Construct hashed message.
         bytes32 messageHash = getHashedMessage(_from, _to, _data, _nonce, _callPrefix);
         bytes32 hashWithPrefix = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32",messageHash));
         address signer = ecrecover(hashWithPrefix, _v, _r, _s);
+        emit test(messageHash, signer);
 
-        require(
-            isAuthorizedEphemeralKey(signer),
-            "Invalid ephemeral key!"
-        );
-        ephemeralKeyData_ = ephemeralKeys[signer];
-        require(
-            ephemeralKeyData_.expirationHeight >= block.number,
-            "ephemeral key has expired!"
-        );
-        // Consume the nonce
-        ephemeralKeyData_.nonce = ephemeralKeyData_.nonce + 1;
-        require(
-            ephemeralKeyData_.nonce == _nonce,
-            "Invalid nonce!"
-        );
+//        require(
+//            isAuthorizedEphemeralKey(signer),
+//            "Invalid ephemeral key!"
+//        );
+//        ephemeralKeyData_ = ephemeralKeys[signer];
+//        require(
+//            ephemeralKeyData_.expirationHeight >= block.number,
+//            "ephemeral key has expired!"
+//        );
+//        // Consume the nonce
+//        ephemeralKeyData_.nonce = ephemeralKeyData_.nonce + 1;
+//        require(
+//            ephemeralKeyData_.nonce == _nonce,
+//            "Invalid nonce!"
+//        );
 
         return ephemeralKeyData_;
     }
