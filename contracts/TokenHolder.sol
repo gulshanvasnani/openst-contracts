@@ -66,7 +66,7 @@ contract TokenHolder is MultiSigWallet {
         bool _status
     );
 
-    event test(bytes32 messagehash, address signer);
+
     /* Structs */
 
     /** expirationHeight is block number at which ephemeralKey expires. */
@@ -104,8 +104,8 @@ contract TokenHolder is MultiSigWallet {
         uint8 _required,
         address[] _wallets
     )
-        public
-        MultiSigWallet(_wallets, _required)
+    public
+    MultiSigWallet(_wallets, _required)
     {
         require(
             _brandedToken != address(0),
@@ -145,9 +145,9 @@ contract TokenHolder is MultiSigWallet {
         uint256 _spendingLimit,
         uint256 _expirationHeight
     )
-        public
-        onlyWallet
-        returns (bytes32 transactionId_)
+    public
+    onlyWallet
+    returns (bytes32 transactionId_)
     {
         require(
             _ephemeralKey != address(0),
@@ -172,7 +172,7 @@ contract TokenHolder is MultiSigWallet {
                 _expirationHeight,
                 address(this),
                 "authorizeSession"
-        ));
+            ));
 
         proposeTransaction(transactionId_);
         confirmTransaction(transactionId_);
@@ -203,9 +203,9 @@ contract TokenHolder is MultiSigWallet {
     function revokeSession(
         address _ephemeralKey
     )
-        public
-        onlyWallet
-        returns (bytes32 transactionId_)
+    public
+    onlyWallet
+    returns (bytes32 transactionId_)
     {
         require(
             _ephemeralKey != address(0),
@@ -220,7 +220,7 @@ contract TokenHolder is MultiSigWallet {
                 _ephemeralKey,
                 address(this),
                 "revokeSession"
-        ));
+            ));
 
         proposeTransaction(transactionId_);
         confirmTransaction(transactionId_);
@@ -247,6 +247,7 @@ contract TokenHolder is MultiSigWallet {
      * @param _nonce incremental nonce.
      * @param _data the bytecode to be executed.
      *         Use web3 getData method to construct _data.
+     * @param _callPrefix It is 4-bytes function selector.
      * @param _v It's the recovery id.
      * @param _r It's the output of an ECDSA signature.
      * @param _s It's also the output of an ECDSA signature.
@@ -263,8 +264,8 @@ contract TokenHolder is MultiSigWallet {
         bytes32 _r,
         bytes32 _s
     )
-        public
-        returns (bool executionResult_ /* success */)
+    public
+    returns (bool executionResult_ /* success */)
     {
         EphemeralKeyData storage ephemeralKeyData = verifySignature(
             _from,
@@ -277,18 +278,18 @@ contract TokenHolder is MultiSigWallet {
             _s
         );
 
-//        BrandedToken(brandedToken).approve(
-//            tokenRules,
-//            ephemeralKeyData.spendingLimit
-//        );
-//        executionResult_ = _to.call(_data);
-//        emit RuleExecuted(_from, _to, _nonce, executionResult_);
-//        BrandedToken(brandedToken).approve(
-//            tokenRules,
-//            0
-//        );
+        BrandedToken(brandedToken).approve(
+            tokenRules,
+            ephemeralKeyData.spendingLimit
+        );
+        executionResult_ = _to.call(_data);
+        emit RuleExecuted(_from, _to, _nonce, executionResult_);
+        BrandedToken(brandedToken).approve(
+            tokenRules,
+            0
+        );
 
-        return true;
+        return executionResult_;
     }
 
     /**
@@ -305,6 +306,7 @@ contract TokenHolder is MultiSigWallet {
      * @param _nonce incremental nonce.
      * @param _data the bytecode to be executed.
      *        It's the bytecode CoGateway redeem function.
+     * @param _callPrefix It is 4-bytes function selector.
      * @param _v It's the recovery id.
      * @param _r It's the output of an ECDSA signature.
      * @param _s It's also the output of an ECDSA signature.
@@ -315,15 +317,15 @@ contract TokenHolder is MultiSigWallet {
         address _from,
         address _to,
         uint256 _nonce,
-        bytes _callPrefix,
         bytes _data,
+        bytes _callPrefix,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
     )
-        public
-        payable
-        returns (bool executionResult_ /* success */)
+    public
+    payable
+    returns (bool executionResult_ /* success */)
     {
         EphemeralKeyData storage ephemeralKeyData = verifySignature(
             _from,
@@ -355,6 +357,26 @@ contract TokenHolder is MultiSigWallet {
         return executionResult_;
     }
 
+    /**
+     * @notice public method to check if valid ephemeral key.
+     *
+     * @dev 0 spendingLimit 0 is not allowed. So spending limit greater than 0 means
+     *      ephemeralKey is present.
+     *
+     * @param _ephemeralKey Ephemeral Key which need to be checked in ephemeralKeys mapping.
+     *
+     * @return status is true/false.
+     */
+    function isAuthorizedEphemeralKey(
+        address _ephemeralKey
+    )
+    view
+    public
+    returns (bool /** success status */)
+    {
+        return ephemeralKeys[_ephemeralKey].spendingLimit > 0;
+    }
+
 
     /* Private Functions */
 
@@ -369,6 +391,7 @@ contract TokenHolder is MultiSigWallet {
      * @param _nonce incremental nonce.
      * @param _data the bytecode to be executed.
      *         Use web3 getData method to construct _data.
+     * @param _callPrefix It is 4-bytes function selector.
      * @param _v It's the recovery id.
      * @param _r It's the output of an ECDSA signature.
      * @param _s It's also the output of an ECDSA signature.
@@ -385,88 +408,88 @@ contract TokenHolder is MultiSigWallet {
         bytes32 _r,
         bytes32 _s
     )
-        private
-        returns (EphemeralKeyData storage ephemeralKeyData_)
+    private
+    returns (EphemeralKeyData storage ephemeralKeyData_)
     {
-//        require(
-//            _from == address(this),
-//            "From should be tokenholder contract address"
-//        );
-//        require(
-//            _to != address(0),
-//            "to address can't be 0"
-//        );
-//        require(
-//            _nonce != 0,
-//            "Nonce can't be 0."
-//        );
-//        require(
-//            _data.length != 0,
-//            "Data length can't be 0."
-//        );
+        require(
+            _from == address(this),
+            "From should be tokenholder contract address"
+        );
+        require(
+            _to != address(0),
+            "to address can't be 0"
+        );
+        require(
+            _nonce != 0,
+            "Nonce can't be 0."
+        );
+        require(
+            _data.length != 0,
+            "Data length can't be 0."
+        );
 
         // Construct hashed message.
-        bytes32 messageHash = getHashedMessage(_from, _to, _data, _nonce, _callPrefix);
+        bytes32 messageHash = getHashedMessage(_from, _to, _data, _callPrefix, _nonce);
         bytes32 hashWithPrefix = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32",messageHash));
         address signer = ecrecover(hashWithPrefix, _v, _r, _s);
-        emit test(messageHash, signer);
 
-//        require(
-//            isAuthorizedEphemeralKey(signer),
-//            "Invalid ephemeral key!"
-//        );
-//        ephemeralKeyData_ = ephemeralKeys[signer];
-//        require(
-//            ephemeralKeyData_.expirationHeight >= block.number,
-//            "ephemeral key has expired!"
-//        );
-//        // Consume the nonce
-//        ephemeralKeyData_.nonce = ephemeralKeyData_.nonce + 1;
-//        require(
-//            ephemeralKeyData_.nonce == _nonce,
-//            "Invalid nonce!"
-//        );
+        require(
+            isAuthorizedEphemeralKey(signer),
+            "Invalid ephemeral key!"
+        );
+        ephemeralKeyData_ = ephemeralKeys[signer];
+        require(
+            ephemeralKeyData_.expirationHeight >= block.number,
+            "ephemeral key has expired!"
+        );
+        // Consume the nonce
+        ephemeralKeyData_.nonce = ephemeralKeyData_.nonce + 1;
+        require(
+            ephemeralKeyData_.nonce == _nonce,
+            "Invalid nonce!"
+        );
 
         return ephemeralKeyData_;
     }
 
     /**
-     *  @notice hash the data
+     * @notice hash the data
      *
-     *  @param _to the target contract the transaction will be executed upon. e.g. BT in case of transfer.
-     *  @param _from it will always be the contract executing the code. It needs to be tokenholder contract address.
-     *  @param _data the bytecode to be executed.
-     *  @param _nonce nonce or a timestamp.
+     * @param _to the target contract the transaction will be executed upon. e.g. BT in case of transfer.
+     * @param _from it will always be the contract executing the code. It needs to be tokenholder contract address.
+     * @param _data the bytecode to be executed.
+     * @param _callPrefix It is 4-bytes function selector.
+     * @param _nonce nonce or a timestamp.
      *
-     *  @return bytes32 hashed data
+     * @return bytes32 hashed data
      */
     function getHashedMessage(
         address _from,
         address _to,
         bytes _data,
-        uint256 _nonce,
-        bytes _callPrefix
+        bytes _callPrefix,
+        uint256 _nonce
     )
-        pure
-        private
-        returns (bytes32)
+    pure
+    private
+    returns (bytes32)
     {
         return keccak256(abi.encodePacked(
-            byte(0x19), // Starting a transaction with byte(0x19) ensure the signed data from being a valid ethereum transaction.
-            byte(0), // The second argument is a version control byte.
-            _from, // The from field will always be the contract executing the code.
-            _to,
-            uint8(0), // the amount in ether to be sent.
-            _data,
-            _nonce,
-            uint8(0), // gasPrice
-            uint8(0), // gasLimit
-            uint8(0), // gasToken
-            _callPrefix, // 4 byte standard call prefix of the function to be called in the from contract.
-                        // This guarantees that a signed message can be only executed in a single instance.
-            uint8(0), // 0 for a standard call, 1 for a DelegateCall and 0 for a create opcode
-            '' // extraHash is always hashed at the end. This is done to increase future compatibility of the standard.
-        ));
+                byte(0x19), // Starting a transaction with byte(0x19) ensure the signed data from being a valid ethereum transaction.
+                byte(0), // The second argument is a version control byte.
+                _from, // The from field will always be the contract executing the code.
+                _to,
+                uint8(0), // the amount in ether to be sent.
+                _data,
+                _nonce,
+                uint8(0), // gasPrice
+                uint8(0), // gasLimit
+                uint8(0), // gasToken
+                _callPrefix, // 4 byte standard call prefix of the function to be called in the from contract.
+            // This guarantees that a signed message can be only executed in a single instance.
+                uint8(0), // 0 for a standard call, 1 for a DelegateCall and 0 for a create opcode
+                '' // extraHash is always hashed at the end. This is done to increase future compatibility of the standard.
+            ));
     }
 
     /**
@@ -481,34 +504,14 @@ contract TokenHolder is MultiSigWallet {
         uint256 _spendingLimit,
         uint256 _expirationHeight
     )
-        private
-        returns (bool)
+    private
+    returns (bool)
     {
         ephemeralKeys[_ephemeralKey].spendingLimit = _spendingLimit;
         ephemeralKeys[_ephemeralKey].nonce = 0;
         ephemeralKeys[_ephemeralKey].expirationHeight = _expirationHeight;
 
         return true;
-    }
-
-    /**
-     * @notice private method to check if valid ephemeral key.
-     *
-     * @dev 0 spendingLimit 0 is not allowed. So spending limit greater than 0 means
-     *      ephemeralKey is present.
-     *
-     * @param _ephemeralKey Ephemeral Key which need to be checked in ephemeralKeys mapping.
-     *
-     * @return status is true/false.
-     */
-    function isAuthorizedEphemeralKey(
-        address _ephemeralKey
-    )
-        view
-        private
-        returns (bool /** success status */)
-    {
-        return ephemeralKeys[_ephemeralKey].spendingLimit > 0;
     }
 
 }
