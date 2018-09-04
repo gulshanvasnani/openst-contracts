@@ -257,11 +257,11 @@ module.exports.perform = (accounts) => {
       { t: 'uint8', v: 0 },
       { t: 'bytes', v: encodedData },
       { t: 'uint256', v: ephemeralKeyNonce },
-      { t: 'uint8', v: 0 },
-      { t: 'uint8', v: 0 },
-      { t: 'uint8', v: 0 },
+      { t: 'uint8', v: '0' },
+      { t: 'uint8', v: '0' },
+      { t: 'uint8', v: '0' },
       { t: 'bytes4', v: callPrefix },
-      { t: 'uint8', v: 0 },
+      { t: 'uint8', v: '0' },
       { t: 'bytes', v: '' }
     );
 
@@ -296,6 +296,8 @@ module.exports.perform = (accounts) => {
       s,
       { from: wallet1 }
     );
+
+    console.log(JSON.stringify(result));
     let transaction123 = await tokenHolderInstance.executeRule(
       tokenHolderInstance.address,
       transferRuleInstance.address,
