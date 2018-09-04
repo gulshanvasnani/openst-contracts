@@ -254,7 +254,7 @@ module.exports.perform = (accounts) => {
       { t: 'bytes', v: '0x00' },
       { t: 'address', v: tokenHolderInstance.address },
       { t: 'address', v: transferRuleInstance.address },
-      { t: 'uint8', v: 0 },
+      { t: 'uint8', v: '0' },
       { t: 'bytes', v: encodedData },
       { t: 'uint256', v: ephemeralKeyNonce },
       { t: 'uint8', v: '0' },
