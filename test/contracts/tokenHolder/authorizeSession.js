@@ -262,7 +262,7 @@ module.exports.perform = (accounts) => {
       { t: 'uint8', v: '0' },
       { t: 'bytes4', v: callPrefix },
       { t: 'uint8', v: '0' },
-      { t: 'bytes', v: '' }
+      { t: 'bytes', v: '0x' }
     );
 
     console.log(
