@@ -485,7 +485,7 @@ contract TokenHolder is MultiSigWallet {
             uint8(0), // gasPrice
             uint8(0), // gasLimit
             uint8(0), // gasToken
-            callPrefix, // 4 byte standard call prefix of the function to be called in the from contract.
+            _callPrefix, // 4 byte standard call prefix of the function to be called in the from contract.
                         // This guarantees that a signed message can be only executed in a single instance.
             uint8(0), // 0 for a standard call, 1 for a DelegateCall and 0 for a create opcode
             '' // extraHash is always hashed at the end. This is done to increase future compatibility of the standard.
