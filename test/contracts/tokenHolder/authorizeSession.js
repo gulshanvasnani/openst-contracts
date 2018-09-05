@@ -42,19 +42,19 @@ module.exports.perform = (accounts) => {
     organizationAddress = accounts[1];
 
   beforeEach(async () => {
-    (mockTokenInstance = await mockToken.new({ from: deployer })),
-      (tokenRulesInstance = await tokenRules.new(organizationAddress, mockTokenInstance.address));
+    mockTokenInstance = await mockToken.new({ from: deployer });
+    tokenRulesInstance = await tokenRules.new(organizationAddress, mockTokenInstance.address);
 
-    (coGateway = accounts[6]),
-      (wallets = [wallet1, wallet2]),
-      (tokenHolderInstance = await tokenHolder.new(
-        mockTokenInstance.address,
-        coGateway,
-        tokenRulesInstance.address,
-        requirement,
-        wallets,
-        { from: deployer }
-      ));
+    coGateway = accounts[6];
+    wallets = [wallet1, wallet2];
+    tokenHolderInstance = await tokenHolder.new(
+      mockTokenInstance.address,
+      coGateway,
+      tokenRulesInstance.address,
+      requirement,
+      wallets,
+      { from: deployer }
+    );
   });
 
   it('should deploy token holder with two requirements', async () => {
