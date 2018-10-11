@@ -14,6 +14,8 @@
 
 const BN = require('bn.js');
 const EthUtils = require('ethereumjs-util');
+const ethsigutil = require('eth-sig-util');
+const secp256k1 = require('secp256k1');
 const web3 = require('../test_lib/web3.js');
 const Utils = require('../test_lib/utils.js');
 const { Event } = require('../test_lib/event_decoder');
@@ -92,13 +94,7 @@ function generateExecuteRuleCallPrefix() {
                 type: 'uint256', name: '',
             },
             {
-                type: 'uint8', name: '',
-            },
-            {
-                type: 'bytes32', name: '',
-            },
-            {
-                type: 'bytes32', name: '',
+                type: 'bytes', name: '',
             },
         ],
     });
@@ -156,13 +152,14 @@ function getExecuteRuleExTxData(
     const msgHash = getExecuteRuleExTxHash(
         _tokenHolderAddress, _ruleAddress, _ruleData, _nonce,
     );
+	
+	const rsv = EthUtils.ecsign(
+		EthUtils.toBuffer(msgHash),
+		EthUtils.toBuffer(_ephemeralKey),
+	);
+	const signature = ethsigutil.concatSig(rsv.v,rsv.r,rsv.s);
 
-    const rsv = EthUtils.ecsign(
-        EthUtils.toBuffer(msgHash),
-        EthUtils.toBuffer(_ephemeralKey),
-    );
-
-    return { msgHash, rsv };
+    return { msgHash, signature };
 }
 
 async function createTokenHolder(
@@ -205,7 +202,7 @@ async function preparePassRule(
         mockRuleValue,
     );
 
-    const { msgHash, rsv } = getExecuteRuleExTxData(
+    const { msgHash, signature } = getExecuteRuleExTxData(
         tokenHolder.address,
         mockRule.address,
         mockRulePassActionData,
@@ -218,7 +215,7 @@ async function preparePassRule(
         mockRuleValue,
         mockRulePassActionData,
         msgHash,
-        rsv,
+			  signature,
     };
 }
 
@@ -231,7 +228,7 @@ async function preparePassPayableRule(
         mockRuleValue,
     );
 
-    const { msgHash, rsv } = getExecuteRuleExTxData(
+    const { msgHash, signature } = getExecuteRuleExTxData(
         tokenHolder.address,
         mockRule.address,
         mockRulePassActionData,
@@ -244,7 +241,7 @@ async function preparePassPayableRule(
         mockRuleValue,
         mockRulePassActionData,
         msgHash,
-        rsv,
+        signature,
     };
 }
 
@@ -257,7 +254,7 @@ async function prepareFailRule(
         mockRuleValue,
     );
 
-    const { msgHash, rsv } = getExecuteRuleExTxData(
+    const { msgHash, signature } = getExecuteRuleExTxData(
         tokenHolder.address,
         mockRule.address,
         mockRuleFailActionData,
@@ -270,7 +267,7 @@ async function prepareFailRule(
         mockRuleValue,
         mockRuleFailActionData,
         msgHash,
-        rsv,
+			  signature,
     };
 }
 
@@ -293,7 +290,7 @@ contract('TokenHolder::executeRule', async () => {
             const {
                 mockRule,
                 mockRulePassActionData,
-                rsv,
+							  signature,
             } = await preparePassRule(
                 accountProvider,
                 tokenHolder,
@@ -306,9 +303,7 @@ contract('TokenHolder::executeRule', async () => {
                     mockRule.address,
                     mockRulePassActionData,
                     nonce,
-                    rsv.v,
-                    EthUtils.bufferToHex(rsv.r),
-                    EthUtils.bufferToHex(rsv.s),
+									  signature
                 ),
                 'Should revert as ExTx is signed with non-authorized key.',
                 'Ephemeral key is not active.',
@@ -329,7 +324,7 @@ contract('TokenHolder::executeRule', async () => {
             const {
                 mockRule,
                 mockRulePassActionData,
-                rsv,
+                signature,
             } = await preparePassRule(
                 accountProvider,
                 tokenHolder,
@@ -347,9 +342,7 @@ contract('TokenHolder::executeRule', async () => {
                     mockRule.address,
                     mockRulePassActionData,
                     nonce,
-                    rsv.v,
-                    EthUtils.bufferToHex(rsv.r),
-                    EthUtils.bufferToHex(rsv.s),
+									  signature
                 ),
                 'Should revert as transaction is signed with expired key.',
                 'Ephemeral key is not active.',
@@ -388,7 +381,7 @@ contract('TokenHolder::executeRule', async () => {
             const {
                 mockRule,
                 mockRulePassActionData,
-                rsv,
+                signature,
             } = await preparePassRule(
                 accountProvider,
                 tokenHolder,
@@ -401,9 +394,7 @@ contract('TokenHolder::executeRule', async () => {
                     mockRule.address,
                     mockRulePassActionData,
                     nonce,
-                    rsv.v,
-                    EthUtils.bufferToHex(rsv.r),
-                    EthUtils.bufferToHex(rsv.s),
+									  signature
                 ),
                 'Should revert as transaction is signed with revoked key.',
                 'Ephemeral key is not active.',
@@ -425,7 +416,7 @@ contract('TokenHolder::executeRule', async () => {
             const {
                 mockRule: mockRule0,
                 mockRulePassActionData: mockRulePassActionData0,
-                rsv: rsv0,
+                signature: signature1,
             } = await preparePassRule(
                 accountProvider,
                 tokenHolder,
@@ -438,9 +429,7 @@ contract('TokenHolder::executeRule', async () => {
                     mockRule0.address,
                     mockRulePassActionData0,
                     invalidNonce0,
-                    rsv0.v,
-                    EthUtils.bufferToHex(rsv0.r),
-                    EthUtils.bufferToHex(rsv0.s),
+									  signature1
                 ),
                 'Should revert as ExTx is signed with a wrong nonce.',
                 'The next nonce is not provided.',
@@ -451,7 +440,7 @@ contract('TokenHolder::executeRule', async () => {
             const {
                 mockRule: mockRule2,
                 mockRulePassActionData: mockRulePassActionData2,
-                rsv: rsv2,
+                signature: signature2,
             } = await preparePassRule(
                 accountProvider,
                 tokenHolder,
@@ -464,9 +453,7 @@ contract('TokenHolder::executeRule', async () => {
                     mockRule2.address,
                     mockRulePassActionData2,
                     invalidNonce2,
-                    rsv2.v,
-                    EthUtils.bufferToHex(rsv2.r),
-                    EthUtils.bufferToHex(rsv2.s),
+									  signature2
                 ),
                 'Should revert as ExTx is signed with a wrong nonce.',
                 'The next nonce is not provided.',
@@ -492,21 +479,19 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule,
                 mockRulePassActionData,
                 msgHash,
-                rsv,
+                signature,
             } = await preparePassRule(
                 accountProvider,
                 tokenHolder,
                 nonce,
                 ephemeralPrivateKey1,
             );
-
+            
             const transactionResponse = await tokenHolder.executeRule(
                 mockRule.address,
                 mockRulePassActionData,
                 nonce,
-                rsv.v,
-                EthUtils.bufferToHex(rsv.r),
-                EthUtils.bufferToHex(rsv.s),
+							  (signature)
             );
 
             const events = Event.decodeTransactionResponse(
@@ -547,7 +532,7 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule,
                 mockRuleFailActionData,
                 msgHash,
-                rsv,
+                signature,
             } = await prepareFailRule(
                 accountProvider,
                 tokenHolder,
@@ -559,9 +544,7 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule.address,
                 mockRuleFailActionData,
                 nonce,
-                rsv.v,
-                EthUtils.bufferToHex(rsv.r),
-                EthUtils.bufferToHex(rsv.s),
+							  signature
             );
 
             const events = Event.decodeTransactionResponse(
@@ -609,7 +592,7 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule,
                 mockRuleValue,
                 mockRulePassActionData,
-                rsv,
+							  signature
             } = await preparePassRule(
                 accountProvider,
                 tokenHolder,
@@ -621,9 +604,7 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule.address,
                 mockRulePassActionData,
                 nonce,
-                rsv.v,
-                EthUtils.bufferToHex(rsv.r),
-                EthUtils.bufferToHex(rsv.s),
+							  signature
             );
 
             assert.strictEqual(
@@ -647,7 +628,7 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule,
                 mockRuleValue,
                 mockRulePassActionData,
-                rsv,
+                signature
             } = await preparePassPayableRule(
                 accountProvider,
                 tokenHolder,
@@ -660,9 +641,7 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule.address,
                 mockRulePassActionData,
                 nonce,
-                rsv.v,
-                EthUtils.bufferToHex(rsv.r),
-                EthUtils.bufferToHex(rsv.s),
+							  signature,
                 {
                     value: payableValue,
                 },
@@ -696,7 +675,7 @@ contract('TokenHolder::executeRule', async () => {
             const {
                 mockRule,
                 mockRulePassActionData,
-                rsv,
+							  signature
             } = await preparePassRule(
                 accountProvider,
                 tokenHolder,
@@ -708,9 +687,7 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule.address,
                 mockRulePassActionData,
                 nonce,
-                rsv.v,
-                EthUtils.bufferToHex(rsv.r),
-                EthUtils.bufferToHex(rsv.s),
+							  signature
             );
 
             assert.isOk(
@@ -732,7 +709,7 @@ contract('TokenHolder::executeRule', async () => {
             const {
                 mockRule,
                 mockRuleFailActionData,
-                rsv,
+							  signature,
             } = await prepareFailRule(
                 accountProvider,
                 tokenHolder,
@@ -744,9 +721,7 @@ contract('TokenHolder::executeRule', async () => {
                 mockRule.address,
                 mockRuleFailActionData,
                 nonce,
-                rsv.v,
-                EthUtils.bufferToHex(rsv.r),
-                EthUtils.bufferToHex(rsv.s),
+							  signature
             );
 
             assert.isNotOk(

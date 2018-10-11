@@ -18,6 +18,7 @@ import "./SafeMath.sol";
 import "./EIP20TokenInterface.sol";
 import "./MultiSigWallet.sol";
 import "./TokenRules.sol";
+//import "./VRSRetrieve.sol";
 
 
 /**
@@ -36,7 +37,7 @@ contract TokenHolder is MultiSigWallet {
 
 
     /* Events */
-
+event submitVRS(uint8 v,bytes32 r,bytes32 s);
     event SessionAuthorizationSubmitted(
         uint256 indexed _transactionID,
         address _ephemeralKey,
@@ -86,7 +87,7 @@ contract TokenHolder is MultiSigWallet {
 
     bytes4 public constant EXECUTE_RULE_CALLPREFIX = bytes4(
         keccak256(
-            "executeRule(address,bytes,uint256,uint8,bytes32,bytes32)"
+            "executeRule(address,bytes,uint256,bytes)"
         )
     );
 
@@ -275,9 +276,7 @@ contract TokenHolder is MultiSigWallet {
         address _to,
         bytes _data,
         uint256 _nonce,
-        uint8 _v,
-        bytes32 _r,
-        bytes32 _s
+        bytes _signature
     )
         public
         payable
@@ -285,14 +284,20 @@ contract TokenHolder is MultiSigWallet {
     {
         bytes32 messageHash = bytes32(0);
         address ephemeralKey = address(0);
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+
+        (v,r,s) = extractVRS(_signature);
+
         (messageHash, ephemeralKey) = verifyExecutableTransaction(
             EXECUTE_RULE_CALLPREFIX,
             _to,
             _data,
             _nonce,
-            _v,
-            _r,
-            _s
+            v,
+            r,
+            s
         );
 
         EphemeralKeyData storage ephemeralKeyData = ephemeralKeys[ephemeralKey];
@@ -348,7 +353,6 @@ contract TokenHolder is MultiSigWallet {
 
 
     /* Private Functions */
-
     function verifyExecutableTransaction(
         bytes4 _callPrefix,
         address _to,
@@ -386,6 +390,48 @@ contract TokenHolder is MultiSigWallet {
         );
 
         keyData.nonce = expectedNonce;
+    }
+
+    /**
+     * @notice It accepts signature and retrieves v,r and s values
+     *
+     * @param _signature Value signed by the signer
+     *
+     * @return v_, r_, s_ They are the signature parts which is used to recover
+     *                    public key.
+     *
+     */
+    function extractVRS
+    (
+        bytes _signature
+    )
+        private
+        pure
+        returns(uint8 v_,bytes32 r_, bytes32 s_)
+    {
+
+        // Check the signature length
+        if (_signature.length != 65) {
+            return;
+        }
+
+        require(_signature.length == 65, "Length of signature is incorrect");
+
+        assembly {
+            r_ := mload(add(_signature, 32))
+            s_ := mload(add(_signature, 64))
+            v_ := byte(0, mload(add(_signature, 96)))
+        }
+
+        // Version of signature should be 27 or 28, but 0 and 1 are also possible versions
+        if (v_ < 27) {
+            v_ += 27;
+        }
+
+        require((v_ == 27 || v_ == 28),"Value of v is incorrect");
+
+        return (v_ ,r_ ,s_ );
+
     }
 
     /**
